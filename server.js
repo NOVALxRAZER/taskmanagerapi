@@ -10,6 +10,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT;
+const HOST = process.env.HOST;
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -197,6 +198,6 @@ app.put('/api/event/:id/status', async (req, res) => {
     }
 });
 
-app.listen(PORT, '0.0.0.0',() => {
+app.listen(PORT, HOST,() => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
