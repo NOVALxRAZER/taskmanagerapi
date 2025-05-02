@@ -3,10 +3,25 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const db = require('./db');
-const bcrypt = require('bcrypt');
+const { AES, enc } = require("crypto-js");
 const util = require('util');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const Securitykey = process.env.JWT_SECRET;
+const decrypt = (data) => {
+    if(data){
+        var bytes = AES.decrypt(data, Securitykey);
+        var decryptedData = bytes.toString(enc.Utf8);
+        return decryptedData;
+    }else{
+        return null;
+    }
+}
+  
+const encrypt = (data) => {
+    return AES.encrypt(data, Securitykey).toString();
+}
 
 const app = express();
 const PORT = process.env.PORT;
@@ -23,7 +38,7 @@ app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = encrypt(password);
         const existingUser = await query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (existingUser.length > 0) {
@@ -55,7 +70,7 @@ app.post('/login', (req, res) => {
         }
 
         const user = results[0];
-        const match = await bcrypt.compare(password, user.password);
+        const match = password === decrypt(user.password);
 
         if (!match) {
             return res.status(401).json({ message: 'Invalid email or password' });
