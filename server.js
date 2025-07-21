@@ -104,6 +104,6 @@ app.get('/', (req, res) => {
     res.send('Task Manager API is running!');
 });
 
-app.listen(PORT, HOST, () => {
-    console.log(`Server running on http://${HOST}:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
 });
