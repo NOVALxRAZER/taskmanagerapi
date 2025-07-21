@@ -47,7 +47,7 @@ app.post('/api/tasks', async (req, res) => {
         res.status(201).json(insertedTask);
     } catch (err) {
         console.error('Error creating task:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err });
     }
 });
 
@@ -73,7 +73,7 @@ app.patch('/api/tasks/:id', async (req, res) => {
         res.status(200).json(rows[0]);
     } catch (err) {
         console.error('Error updating task:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err });
     }
 });
 
@@ -95,7 +95,7 @@ app.delete('/api/tasks/:id', async (req, res) => {
         res.status(200).json({ message: 'Task deleted successfully' });
     } catch (err) {
         console.error('Error deleting task:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err });
     }
 });
 
