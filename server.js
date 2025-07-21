@@ -20,7 +20,7 @@ app.get('/api/tasks', async (req, res) => {
         res.status(200).json(result[0]);
     } catch (err) {
         console.error('Error getting tasks:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ error: err });
     }
 });
 
