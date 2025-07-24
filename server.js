@@ -24,6 +24,27 @@ app.get('/api/tasks', async (req, res) => {
     }
 });
 
+// GET one task by ID
+app.get('/api/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT id, title, description, completed, pic_name, start_date, end_date, created_at FROM tasks WHERE id = ?',
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        res.status(200).json(rows[0]);
+    } catch (err) {
+        console.error('Error getting task by ID:', err);
+        res.status(500).json({ error: err });
+    }
+});
+
 // POST a new task
 app.post('/api/tasks', async (req, res) => {
     const { title, description, pic_name, start_date, end_date } = req.body;
