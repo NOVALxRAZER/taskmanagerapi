@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -6,7 +5,6 @@ const pool = require('./db');
 require('dotenv').config();
 
 const PORT = process.env.PORT;
-const HOST = process.env.DB_HOST;
 
 const app = express();
 
@@ -16,8 +14,10 @@ app.use(bodyParser.json());
 // GET all tasks
 app.get('/api/tasks', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM tasks ORDER BY id DESC');
-        res.status(200).json(result[0]);
+        const [rows] = await pool.query(
+            'SELECT id, title, description, completed, pic_name, start_date, end_date, created_at FROM tasks ORDER BY id DESC'
+        );
+        res.status(200).json(rows);
     } catch (err) {
         console.error('Error getting tasks:', err);
         res.status(500).json({ error: err });
@@ -26,20 +26,24 @@ app.get('/api/tasks', async (req, res) => {
 
 // POST a new task
 app.post('/api/tasks', async (req, res) => {
-    const { title, description } = req.body;
-    if (!title) {
-        return res.status(400).json({ error: 'Title is required' });
+    const { title, description, pic_name, start_date, end_date } = req.body;
+    if (!title || !pic_name || !start_date || !end_date) {
+        return res.status(400).json({ error: 'Missing required fields' });
     }
+
     try {
         const [result] = await pool.query(
-            'INSERT INTO tasks (title, description) VALUES (?, ?)',
-            [title, description]
+            'INSERT INTO tasks (title, description, pic_name, start_date, end_date) VALUES (?, ?, ?, ?, ?)',
+            [title, description, pic_name, start_date, end_date]
         );
 
         const insertedTask = {
             id: result.insertId,
             title,
             description,
+            pic_name,
+            start_date,
+            end_date,
             completed: false,
             success: true,
         };
@@ -54,12 +58,12 @@ app.post('/api/tasks', async (req, res) => {
 // PATCH update a task
 app.patch('/api/tasks/:id', async (req, res) => {
     const { id } = req.params;
-    const { title, description, completed } = req.body;
+    const { completed } = req.body;
 
     try {
         const updateResult = await pool.query(
-            'UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?',
-            [title, description, completed, id]
+            'UPDATE tasks SET completed = ? WHERE id = ?',
+            [completed, id]
         );
 
         // Check if any row was affected
@@ -68,11 +72,53 @@ app.patch('/api/tasks/:id', async (req, res) => {
         }
 
         // Now fetch the updated row manually
-        const [rows] = await pool.query('SELECT * FROM tasks WHERE id = ?', [id]);
+        const patchededTask = {
+            id,
+            completed,
+            status: true,
+        };
 
-        res.status(200).json(rows[0]);
+        res.status(200).json(patchededTask);
     } catch (err) {
         console.error('Error updating task:', err);
+        res.status(500).json({ error: err });
+    }
+});
+
+// PUT to edit a task
+app.put('/api/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+    const { title, description, completed, pic_name, start_date, end_date } = req.body;
+
+    if (!title || !pic_name || !start_date || !end_date) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    try {
+        const [updateResult] = await pool.query(
+            `UPDATE tasks SET title = ?, description = ?, completed = ?, pic_name = ?, start_date = ?, end_date = ? WHERE id = ?`,
+            [title, description, completed, pic_name, start_date, end_date, id]
+        );
+
+        if (updateResult.affectedRows === 0) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // const [rows] = await pool.query('SELECT * FROM tasks WHERE id = ?', [id]);
+
+        const editedTask = {
+            id,
+            title,
+            description,
+            pic_name,
+            start_date,
+            end_date,
+            success: true,
+        };
+
+        res.status(200).json(editedTask);
+    } catch (err) {
+        console.error('Error editing task:', err);
         res.status(500).json({ error: err });
     }
 });
@@ -92,7 +138,10 @@ app.delete('/api/tasks/:id', async (req, res) => {
         // Delete the task
         await pool.query('DELETE FROM tasks WHERE id = ?', [id]);
 
-        res.status(200).json({ message: 'Task deleted successfully' });
+        res.status(200).json({
+            message: 'Task deleted successfully',
+            status: true
+        });
     } catch (err) {
         console.error('Error deleting task:', err);
         res.status(500).json({ error: err });
